@@ -30,6 +30,7 @@ def receive_update():
 # Start command handler
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
+    app.logger.info("Received /start command")
     markup = types.InlineKeyboardMarkup()
     button = types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=WEB_APP_URL))
     markup.add(button)
