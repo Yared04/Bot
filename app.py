@@ -10,7 +10,7 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 WEB_APP_URL = os.getenv("WEB_APP_URL")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
-bot = TeleBot(TOKEN)
+bot = TeleBot(TOKEN, threaded=False)
 
 app = Flask(__name__)
 
