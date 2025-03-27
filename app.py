@@ -30,9 +30,10 @@ def receive_update():
 # Start command handler
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
-    app.logger.info("Received /start command")
+    bot_username = bot.get_me().username  # Get the bot's username
+    mini_app_url = f"{WEB_APP_URL}?client_id={bot_username}"  # Pass bot identifier
     markup = types.InlineKeyboardMarkup()
-    button = types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=WEB_APP_URL))
+    button = types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=mini_app_url))
     markup.add(button)
     bot.send_message(message.chat.id, "Click the button below to launch the Mini App and create a post:", reply_markup=markup)
 
