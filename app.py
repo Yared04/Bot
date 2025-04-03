@@ -30,12 +30,23 @@ def receive_update():
 # Start command handler
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
-    bot_username = bot.get_me().username  # Get the bot's username
-    mini_app_url = f"{WEB_APP_URL}?client_id={bot_username}"  # Pass bot identifier
+    user_id = message.from_user.id
+    mini_app_url = f"{WEB_APP_URL}?client_id={user_id}"  # Pass bot identifier
     markup = types.InlineKeyboardMarkup()
     button = types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=mini_app_url))
     markup.add(button)
     bot.send_message(message.chat.id, "Click the button below to launch the Mini App and create a post:", reply_markup=markup)
+
+# Return user's data
+@bot.message_handler(commands=["me"])
+def send_user_data(message):
+    user_data = {
+        "id": message.from_user.id,
+        "username": message.from_user.username,
+        "first_name": message.from_user.first_name,
+        "last_name": message.from_user.last_name,
+    }
+    bot.send_message(message.chat.id, str(user_data))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
