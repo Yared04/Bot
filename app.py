@@ -10,6 +10,8 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 WEB_APP_URL = os.getenv("WEB_APP_URL")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
+ALLOWED_USERS = [366965858]
+
 bot = TeleBot(TOKEN, threaded=False)
 
 app = Flask(__name__)
@@ -27,10 +29,15 @@ def receive_update():
     bot.process_new_updates([types.Update.de_json(update)])
     return "OK", 200
 
+def is_allowed(user_id):
+    return user_id in ALLOWED_USERS
+
 # Start command handler
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
     user_id = message.from_user.id
+    if not is_allowed(user_id):
+        return bot.send_message(message.chat.id, "❌ You're not authorized to use this bot. Contact @yared_04 for access.")
     mini_app_url = f"{WEB_APP_URL}?client_id={user_id}"  # Pass bot identifier
     markup = types.InlineKeyboardMarkup()
     button = types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=mini_app_url))
