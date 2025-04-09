@@ -40,13 +40,13 @@ def send_welcome(message):
 # Return user's data
 @bot.message_handler(commands=["me"])
 def send_user_data(message):
-    user_data = {
-        "id": message.from_user.id,
-        "username": message.from_user.username,
-        "first_name": message.from_user.first_name,
-        "last_name": message.from_user.last_name,
-    }
-    bot.send_message(message.chat.id, str(user_data))
+    user_data = message.from_user
+    formatted_message = (
+        f"🆔 ID: {user_data.id}\n"
+        f"👤 Username: @{user_data.username if user_data.username else 'N/A'}\n"
+        f"📛 Name: {user_data.first_name} {" "} {user_data.last_name}\n"
+    )
+    bot.send_message(message.chat.id, formatted_message)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
