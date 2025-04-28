@@ -63,22 +63,49 @@ def add_user(message):
         return bot.send_message(message.chat.id, "❌ You don't have permission to use this command.")
     
     try:
-        # The command should be in the format: /add_user <telegram_id>
+        # Check if the command has the correct format
+        if len(message.text.split()) != 2:
+            return bot.send_message(
+                message.chat.id,
+                "❌ Invalid command format. Use: /add_user <telegram_id>"
+            )
+        
+        # Get the telegram_id from the command
         _, telegram_id = message.text.split()
         telegram_id = int(telegram_id)
+        
+        # Check if user already exists
+        existing_user = User.query.filter_by(telegram_id=telegram_id).first()
+        if existing_user:
+            if existing_user.is_active:
+                return bot.send_message(
+                    message.chat.id,
+                    f"❌ User {telegram_id} is already authorized."
+                )
+            else:
+                # Reactivate the user if they were deactivated
+                existing_user.is_active = True
+                db.session.commit()
+                return bot.send_message(
+                    message.chat.id,
+                    f"✅ Reactivated user {telegram_id}."
+                )
         
         # Create new user
         new_user = User(
             telegram_id=telegram_id,
             username=message.from_user.username,
             first_name=message.from_user.first_name,
-            last_name=message.from_user.last_name
+            last_name=message.from_user.last_name,
+            is_active=True
         )
         
         db.session.add(new_user)
         db.session.commit()
         
         bot.send_message(message.chat.id, f"✅ User {telegram_id} has been added successfully!")
+    except ValueError:
+        bot.send_message(message.chat.id, "❌ Invalid Telegram ID. Please provide a valid number.")
     except Exception as e:
         bot.send_message(message.chat.id, f"❌ Error adding user: {str(e)}")
 
