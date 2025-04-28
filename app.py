@@ -2,6 +2,9 @@ from flask import Flask, request
 from telebot import TeleBot, types
 from dotenv import load_dotenv
 import os
+from database import init_db, db
+from models.user import User
+from auth import require_authorization
 
 # Load environment variables
 load_dotenv()
@@ -10,11 +13,11 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 WEB_APP_URL = os.getenv("WEB_APP_URL")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
-ALLOWED_USERS = [366965858]
-
 bot = TeleBot(TOKEN, threaded=False)
-
 app = Flask(__name__)
+
+# Initialize database
+init_db(app)
 
 # Set Webhook
 @app.route("/set_webhook", methods=["GET"])
@@ -29,16 +32,12 @@ def receive_update():
     bot.process_new_updates([types.Update.de_json(update)])
     return "OK", 200
 
-def is_allowed(user_id):
-    return user_id in ALLOWED_USERS
-
 # Start command handler
 @bot.message_handler(commands=["start"])
+@require_authorization
 def send_welcome(message):
     user_id = message.from_user.id
-    if not is_allowed(user_id):
-        return bot.send_message(message.chat.id, "❌ You're not authorized to use this bot. Contact @yared_04 for access.")
-    mini_app_url = f"{WEB_APP_URL}?client_id={user_id}"  # Pass bot identifier
+    mini_app_url = f"{WEB_APP_URL}?client_id={user_id}"
     markup = types.InlineKeyboardMarkup()
     button = types.InlineKeyboardButton("Open Mini App", web_app=types.WebAppInfo(url=mini_app_url))
     markup.add(button)
@@ -46,6 +45,7 @@ def send_welcome(message):
 
 # Return user's data
 @bot.message_handler(commands=["me"])
+@require_authorization
 def send_user_data(message):
     user_data = message.from_user
     formatted_message = (
@@ -54,6 +54,33 @@ def send_user_data(message):
         f"📛 Name: {user_data.first_name} {user_data.last_name or ''}\n"
     )
     bot.send_message(message.chat.id, formatted_message)
+
+# Admin command to add new users
+@bot.message_handler(commands=["add_user"])
+def add_user(message):
+    # Check if the command sender is an admin
+    if not User.is_authorized(message.from_user.id):
+        return bot.send_message(message.chat.id, "❌ You don't have permission to use this command.")
+    
+    try:
+        # The command should be in the format: /add_user <telegram_id>
+        _, telegram_id = message.text.split()
+        telegram_id = int(telegram_id)
+        
+        # Create new user
+        new_user = User(
+            telegram_id=telegram_id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name
+        )
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        bot.send_message(message.chat.id, f"✅ User {telegram_id} has been added successfully!")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Error adding user: {str(e)}")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
